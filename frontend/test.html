@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JavaScript Loading Test</title>
+</head>
+<body>
+  <h1>JavaScript Loading Test</h1>
+  <p>This page tests if JavaScript files are loading correctly.</p>
+  
+  <button onclick="testFunction()">Click to test JavaScript</button>
+  
+  <script>
+    // Check if the script loads properly
+    window.addEventListener('load', function() {
+      if (window.testScriptLoaded) {
+        document.body.innerHTML += '<p style="color: green; font-weight: bold;">SUCCESS: Test script loaded correctly!</p>';
+      } else {
+        document.body.innerHTML += '<p style="color: red; font-weight: bold;">ERROR: Test script did not load properly!</p>';
+      }
+    });
+  </script>
+  
+  <!-- Load the test script with absolute path -->
+  <script src="/test-script.js"></script>
+</body>
+</html> 

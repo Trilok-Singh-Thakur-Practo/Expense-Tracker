@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="/src/assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="/src/assets/images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div id="app">
+        <!-- Content will be loaded dynamically based on user role and state -->
+        <div id="loading">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- First, load the core utilities that don't depend on anything else -->
+    <script src="/src/utils/api.js"></script>
+    <script src="/src/utils/departmentUtil.js"></script>
+    <script src="/src/utils/auth.js"></script>
+    
+    <!-- Then load pages that may depend on utilities -->
+    <script src="/src/pages/login.js"></script>
+    <script src="/src/pages/register.js"></script>
+    <script src="/src/pages/employee/dashboard.js"></script>
+    <script src="/src/pages/manager/dashboard.js"></script>
+    <script src="/src/pages/finance/dashboard.js"></script>
+    <script src="/src/pages/expense/add.js"></script>
+    <script src="/src/pages/budget/add.js"></script>
+    
+    <!-- Load the router last, as it depends on both utilities and pages -->
+    <script src="/src/utils/router.js"></script>
+    
+    <!-- Finally initialize the app -->
+    <script src="/src/app.js"></script>
+</body>
+</html> 
