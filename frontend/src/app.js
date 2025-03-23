@@ -121,7 +121,7 @@ function createNavbar() {
         const user = Auth.getCurrentUser();
         
         // Add links based on role
-        if (user.role === 'EMPLOYEE' || user.role === 'MANAGER') {
+        if (user.role === 'EMPLOYEE') {
             const addExpenseItem = document.createElement('li');
             addExpenseItem.className = 'nav-item';
             

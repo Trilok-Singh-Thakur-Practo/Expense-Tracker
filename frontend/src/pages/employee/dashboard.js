@@ -168,9 +168,8 @@ async function loadUserExpenses() {
             return;
         }
         
-        // In a real app, you would use the user ID from the JWT token
-        // For this demo, we'll use a hardcoded ID
-        const userId = 1;
+
+        const userId = user.id || 1;
         
         // Call API to get user expenses
         const response = await Api.get(ApiEndpoints.expenses.getByUser(userId));
@@ -180,6 +179,14 @@ async function loadUserExpenses() {
         
         if (response.success) {
             const expenses = response.data;
+            // Log the raw response data in detail
+            console.log('Number of expenses received:', expenses.length);
+            
+            if (expenses && expenses.length > 0) {
+                console.log('First expense object structure:', expenses[0]);
+                console.log('Status values found:', [...new Set(expenses.map(e => e.status))]);
+            }
+            
             // Pass correct table ID parameter
             updateExpensesTable('expensesTableBody', expenses);
             updateDashboardStats(expenses);
@@ -217,7 +224,7 @@ function updateExpensesTable(tableBodyId, expenses) {
     if (!expenses || expenses.length === 0) {
         const placeholderRow = document.createElement('tr');
         const placeholderCell = document.createElement('td');
-        placeholderCell.colSpan = 6;
+        placeholderCell.colSpan = 7;
         placeholderCell.textContent = 'No expenses found. Add a new expense to get started.';
         placeholderCell.style.textAlign = 'center';
         placeholderRow.appendChild(placeholderCell);
@@ -230,20 +237,25 @@ function updateExpensesTable(tableBodyId, expenses) {
         try {
             const row = document.createElement('tr');
             
+            // Department cell
+            const departmentCell = document.createElement('td');
+            departmentCell.textContent = expense.department || 'General';
+            row.appendChild(departmentCell);
+            
             // Name cell
             const nameCell = document.createElement('td');
             nameCell.textContent = expense.name || 'No name';
             row.appendChild(nameCell);
             
-            // Amount cell
-            const amountCell = document.createElement('td');
-            amountCell.textContent = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
-            row.appendChild(amountCell);
-            
             // Type cell
             const typeCell = document.createElement('td');
             typeCell.textContent = expense.type || 'Unknown';
             row.appendChild(typeCell);
+            
+            // Amount cell
+            const amountCell = document.createElement('td');
+            amountCell.textContent = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
+            row.appendChild(amountCell);
             
             // Date cell
             const dateCell = document.createElement('td');
@@ -261,18 +273,40 @@ function updateExpensesTable(tableBodyId, expenses) {
             // Actions cell
             const actionsCell = document.createElement('td');
             
-            // Only show delete button for pending expenses
-            if (expense.status === 'PENDING') {
+            // Only show delete button for pending expenses - using plaintext instead of just icon
+            console.log('Raw expense data:', JSON.stringify(expense));
+            console.log('Expense status:', expense.status, 'Type:', typeof expense.status);
+            
+            // Check if status is pending using more flexible matching
+            const isPending = expense.status === 'PENDING' || 
+                             (typeof expense.status === 'string' && expense.status.toUpperCase() === 'PENDING') ||
+                             (typeof expense.status === 'string' && expense.status.toUpperCase().includes('PEND'));
+            
+            console.log('Is expense pending?', isPending);
+            
+            if (isPending) {
+                console.log('Creating delete button for expense ID:', expense.id);
+                
+                // Create a more obvious delete button with text and icon
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'btn btn-danger';
-                deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteButton.textContent = 'Delete';  // Use text instead of just an icon
                 deleteButton.style.marginRight = '5px';
+                deleteButton.style.backgroundColor = '#e74c3c'; // Force red color
+                deleteButton.style.color = 'white';
+                deleteButton.style.padding = '4px 8px';
+                deleteButton.style.border = 'none';
+                deleteButton.style.borderRadius = '3px';
+                deleteButton.style.cursor = 'pointer';
+                
                 deleteButton.addEventListener('click', () => {
                     if (confirm('Are you sure you want to delete this expense?')) {
                         deleteExpense(expense.id);
                     }
                 });
+                
                 actionsCell.appendChild(deleteButton);
+                console.log('Delete button added to DOM');
             }
             
             // View button
@@ -306,9 +340,13 @@ function updateExpensesTable(tableBodyId, expenses) {
             });
             actionsCell.appendChild(viewButton);
             
+            // Make sure to append actions cell to the row
             row.appendChild(actionsCell);
+            console.log('Actions cell appended to row, contains children:', actionsCell.childNodes.length);
             
+            // Append row to table body
             tableBody.appendChild(row);
+            console.log('Row appended to table body');
         } catch (error) {
             console.error('Error rendering expense row:', error, expense);
         }

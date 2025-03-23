@@ -22,16 +22,6 @@ function renderManagerDashboard() {
     dashboardTitle.className = 'dashboard-title';
     dashboardTitle.textContent = 'Manager Dashboard';
     
-    const addExpenseButton = document.createElement('button');
-    addExpenseButton.className = 'btn';
-    addExpenseButton.textContent = 'Add New Expense';
-    addExpenseButton.addEventListener('click', () => {
-        Router.navigate('addExpense');
-    });
-    
-    dashboardHeader.appendChild(dashboardTitle);
-    dashboardHeader.appendChild(addExpenseButton);
-    
     // Create alert container
     const alertContainer = document.createElement('div');
     alertContainer.id = 'alertContainer';
@@ -699,7 +689,7 @@ async function updateExpenseStatus(expenseId, status, rejectionReason = null) {
             data.rejectionReason = rejectionReason;
         }
         
-        const response = await Api.put(ApiEndpoints.expenses.updateStatus(expenseId), data);
+        const response = await Api.put(ApiEndpoints.expenses.updateStatus(expenseId, status), data);
         
         // Hide loading
         hideLoading();
