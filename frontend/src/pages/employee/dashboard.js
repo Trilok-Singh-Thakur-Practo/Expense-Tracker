@@ -280,23 +280,29 @@ function updateExpensesTable(tableBodyId, expenses) {
             viewButton.className = 'btn';
             viewButton.innerHTML = '<i class="fas fa-eye"></i>';
             viewButton.addEventListener('click', () => {
-                // Build a safe details string
-                const name = expense.name || 'No name';
-                const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
-                const type = expense.type || 'Unknown';
-                const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
-                const status = expense.status || 'Unknown';
-                const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
-                
-                alert(`
-                    Expense Details:
-                    Name: ${name}
-                    Amount: ${amount}
-                    Type: ${type}
-                    Date: ${date}
-                    Status: ${status}
-                    ${receiptUrl}
-                `);
+                // Use the UI utilities modal function
+                if (window.UI && typeof window.UI.showExpenseDetailModal === 'function') {
+                    window.UI.showExpenseDetailModal(expense);
+                } else {
+                    // Fallback to the old alert method if function not available
+                    // Build a safe details string
+                    const name = expense.name || 'No name';
+                    const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
+                    const type = expense.type || 'Unknown';
+                    const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
+                    const status = expense.status || 'Unknown';
+                    const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
+                    
+                    alert(`
+                        Expense Details:
+                        Name: ${name}
+                        Amount: ${amount}
+                        Type: ${type}
+                        Date: ${date}
+                        Status: ${status}
+                        ${receiptUrl}
+                    `);
+                }
             });
             actionsCell.appendChild(viewButton);
             

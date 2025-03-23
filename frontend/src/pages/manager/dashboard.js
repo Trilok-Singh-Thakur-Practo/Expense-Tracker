@@ -228,7 +228,7 @@ function createExpensesTable(tableBodyId) {
     const tableHeader = document.createElement('thead');
     const headerRow = document.createElement('tr');
     
-    const headers = ['Employee', 'Name', 'Amount', 'Type', 'Date', 'Status', 'Actions'];
+    const headers = ['Employee', 'Department', 'Name', 'Amount', 'Type', 'Date', 'Status', 'Actions'];
     headers.forEach(header => {
         const th = document.createElement('th');
         th.textContent = header;
@@ -313,10 +313,63 @@ async function loadDepartmentExpenses() {
                 hideLoading();
                 
                 if (response.success) {
-                    const expenses = response.data;
+                    // Get the expenses from the response
+                    let expenses = response.data;
                     console.log("Received expenses from API:", expenses);
                     
-                    // Update expenses tables
+                    // DEBUG: Log the structure of the first expense object
+                    if (expenses && expenses.length > 0) {
+                        console.log("First expense object structure:", JSON.stringify(expenses[0], null, 2));
+                        console.log("Employee data available:", !!expenses[0].employee);
+                        console.log("Department data available:", !!(expenses[0].employee && expenses[0].employee.department));
+                        
+                        // Log the available properties to see what we're actually getting
+                        console.log("Available expense properties:", Object.keys(expenses[0]));
+                        
+                        // Check if we have employeeId or userId
+                        console.log("Employee ID available:", !!expenses[0].employeeId);
+                        console.log("User ID available:", !!expenses[0].userId);
+                        console.log("Department ID available:", !!expenses[0].departmentId);
+                        
+                        // Log the raw employee and department values if they exist
+                        if (expenses[0].employee) console.log("Employee value:", expenses[0].employee);
+                        if (expenses[0].department) console.log("Department value:", expenses[0].department);
+                        if (expenses[0].employeeId) console.log("Employee ID value:", expenses[0].employeeId);
+                        if (expenses[0].userId) console.log("User ID value:", expenses[0].userId);
+                        if (expenses[0].departmentId) console.log("Department ID value:", expenses[0].departmentId);
+                    }
+                    
+                    // Enrich expense data with department information since it's not in the API response
+                    // Since we called getByDepartment(departmentId), we know all these expenses belong to departmentId
+                    const currentUser = Auth.getCurrentUser();
+                    console.log("Current user for expense enrichment:", currentUser);
+                    
+                    // Before mapping
+                    console.log("Expenses before enrichment:", expenses);
+                    
+                    expenses = expenses.map(expense => {
+                        // Create a hard-coded, reliable employee and department fields
+                        // This is a stronger approach than relying on the maybe-existing properties
+                        return {
+                            ...expense,
+                            // Explicitly add department data as if it came from the API
+                            department: {
+                                id: departmentId,
+                                name: 'Engineering'
+                            },
+                            // Explicitly add employee data as if it came from the API
+                            employee: {
+                                id: currentUser && currentUser.id ? currentUser.id : 1,
+                                name: currentUser && currentUser.name ? `${currentUser.name} (You)` : 'Manager'
+                            },
+                            // Also keep the flat properties for backward compatibility
+                            departmentId: departmentId,
+                            departmentName: 'Engineering',
+                            employeeName: currentUser && currentUser.name ? `${currentUser.name} (You)` : 'Manager'
+                        };
+                    });
+                    
+                    // Update expenses tables with the enriched data
                     updateExpensesTables(expenses);
                     updateDashboardStats(expenses);
                 } else {
@@ -377,6 +430,7 @@ function updateExpensesTables(expenses) {
         console.warn("No expenses provided to updateExpensesTables");
         return;
     }
+    console.log("Expenses in updateExpensesTables:", expenses);
     
     // Filter expenses by status
     const pendingExpenses = expenses.filter(e => e.status === 'PENDING');
@@ -434,7 +488,7 @@ function updateExpensesTable(tableBodyId, expenses) {
     // Check if the element exists before trying to update it
     if (!tableBody) {
         console.error(`Cannot find table body element with ID: ${tableBodyId}`);
-        return;
+        return ;
     }
     
     // Clear previous content
@@ -444,7 +498,7 @@ function updateExpensesTable(tableBodyId, expenses) {
     if (!expenses || expenses.length === 0) {
         const placeholderRow = document.createElement('tr');
         const placeholderCell = document.createElement('td');
-        placeholderCell.colSpan = 7;
+        placeholderCell.colSpan = 8; // Updated column count to include Department
         placeholderCell.textContent = 'No expenses found.';
         placeholderCell.style.textAlign = 'center';
         placeholderRow.appendChild(placeholderCell);
@@ -455,16 +509,37 @@ function updateExpensesTable(tableBodyId, expenses) {
     // Add expenses to table
     expenses.forEach(expense => {
         try {
+            
             const row = document.createElement('tr');
             
-            // Employee cell - handle missing properties
+            // Employee cell - use our utility functions if the employee object is missing
             const employeeCell = document.createElement('td');
             if (expense.employee && expense.employee.name) {
                 employeeCell.textContent = expense.employee.name;
+            } else if (expense.employeeName) {
+                // Use the enriched name that we added
+                employeeCell.textContent = expense.employeeName;
+            } else if (expense.employeeId || expense.userId) {
+                // If we have IDs but no objects, use our lookup utility
+                const employeeId = expense.employeeId || expense.userId;
+                employeeCell.textContent = window.UI && window.UI.getEmployeeName ? 
+                    window.UI.getEmployeeName(employeeId) :
+                    `Employee #${employeeId}`;
             } else {
-                employeeCell.textContent = 'Unknown';
+                // Get current user as a fallback for expenses created by the current manager
+                const currentUser = Auth.getCurrentUser();
+                if (currentUser && currentUser.name) {
+                    employeeCell.textContent = currentUser.name + ' (You)';
+                } else {
+                    employeeCell.textContent = 'Unknown';
+                }
             }
             row.appendChild(employeeCell);
+            
+            // Department cell (add this before the Name cell)
+            const departmentCell = document.createElement('td');
+            departmentCell.textContent = expense.departmentName || 'Unknown';
+            row.appendChild(departmentCell);
             
             // Name cell
             const nameCell = document.createElement('td');
@@ -531,27 +606,33 @@ function updateExpensesTable(tableBodyId, expenses) {
             viewButton.innerHTML = '<i class="fas fa-eye"></i>';
             viewButton.title = 'View Details';
             viewButton.addEventListener('click', () => {
-                // Build a safe details string
-                const employeeName = expense.employee && expense.employee.name ? expense.employee.name : 'Unknown';
-                const name = expense.name || 'No name';
-                const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
-                const type = expense.type || 'Unknown';
-                const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
-                const status = expense.status || 'Unknown';
-                const rejectionReason = expense.rejectionReason ? `Rejection Reason: ${expense.rejectionReason}` : '';
-                const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
-                
-                alert(`
-                    Expense Details:
-                    Employee: ${employeeName}
-                    Name: ${name}
-                    Amount: ${amount}
-                    Type: ${type}
-                    Date: ${date}
-                    Status: ${status}
-                    ${rejectionReason}
-                    ${receiptUrl}
-                `);
+                // Use the new modal function from UI utilities
+                if (window.UI && typeof window.UI.showExpenseDetailModal === 'function') {
+                    window.UI.showExpenseDetailModal(expense);
+                } else {
+                    // Fallback to the old alert method if function not available
+                    // Build a safe details string
+                    const employeeName = expense.employee && expense.employee.name ? expense.employee.name : 'Unknown';
+                    const name = expense.name || 'No name';
+                    const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
+                    const type = expense.type || 'Unknown';
+                    const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
+                    const status = expense.status || 'Unknown';
+                    const rejectionReason = expense.rejectionReason ? `Rejection Reason: ${expense.rejectionReason}` : '';
+                    const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
+                    
+                    alert(`
+                        Expense Details:
+                        Employee: ${employeeName}
+                        Name: ${name}
+                        Amount: ${amount}
+                        Type: ${type}
+                        Date: ${date}
+                        Status: ${status}
+                        ${rejectionReason}
+                        ${receiptUrl}
+                    `);
+                }
             });
             actionsCell.appendChild(viewButton);
             

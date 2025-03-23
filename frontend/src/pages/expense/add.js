@@ -501,6 +501,11 @@ async function handleExpenseFormSubmit(event) {
         return;
     }
     
+    // Log user information to debug employee/department issue
+    console.log("Current user submitting expense:", currentUser);
+    console.log("User has departmentId:", currentUser.departmentId);
+    console.log("User has ID:", currentUser.id);
+    
     // Validate department ID - show warning but allow submission
     if (!currentUser.departmentId) {
         const alert = document.createElement('div');
@@ -533,9 +538,13 @@ async function handleExpenseFormSubmit(event) {
         expenseData.employeeId = currentUser.id;
     }
     
+    // Log the expense data we're sending to debug employee/department issue
+    console.log("Expense data being sent to API:", expenseData);
+    
     try {
         // Send to API - use consistent endpoint format
         const response = await Api.post('/expenses', expenseData);
+        console.log("API response from expense creation:", response);
         
         if (response && response.success) {
             // Show success message
@@ -558,7 +567,7 @@ async function handleExpenseFormSubmit(event) {
             
             // Reload budget information if we might have access (not EMPLOYEE)
             if (currentUser.role !== 'EMPLOYEE') {
-            loadBudgetInformation();
+                loadBudgetInformation();
             }
             
             // Redirect after a short delay

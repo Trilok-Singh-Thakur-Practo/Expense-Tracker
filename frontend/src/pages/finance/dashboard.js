@@ -455,8 +455,8 @@ function updateExpensesTable(tableBodyId, expenses) {
             
             // Department cell - safely access nested properties
             const departmentCell = document.createElement('td');
-            if (expense.employee && expense.employee.department && expense.employee.department.name) {
-                departmentCell.textContent = expense.employee.department.name;
+            if ( expense.department && expense.department.name) {
+                departmentCell.textContent = expense.department.name;
             } else {
                 departmentCell.textContent = 'Unknown';
             }
@@ -538,28 +538,34 @@ function updateExpensesTable(tableBodyId, expenses) {
             viewButton.innerHTML = '<i class="fas fa-eye"></i>';
             viewButton.title = 'View Details';
             viewButton.addEventListener('click', () => {
-                // Build a safe details string
-                const department = expense.employee && expense.employee.department && expense.employee.department.name 
-                    ? expense.employee.department.name : 'Unknown';
-                const employee = expense.employee && expense.employee.name ? expense.employee.name : 'Unknown';
-                const name = expense.name || 'No name';
-                const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
-                const type = expense.type || 'Unknown';
-                const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
-                const status = expense.status || 'Unknown';
-                const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
-                
-                alert(`
-                    Expense Details:
-                    Department: ${department}
-                    Employee: ${employee}
-                    Name: ${name}
-                    Amount: ${amount}
-                    Type: ${type}
-                    Date: ${date}
-                    Status: ${status}
-                    ${receiptUrl}
-                `);
+                // Use the UI utilities modal function
+                if (window.UI && typeof window.UI.showExpenseDetailModal === 'function') {
+                    window.UI.showExpenseDetailModal(expense);
+                } else {
+                    // Fallback to the old alert method if function not available
+                    // Build a safe details string
+                    const department = expense.employee && expense.employee.department && expense.employee.department.name 
+                        ? expense.employee.department.name : 'Unknown';
+                    const employee = expense.employee && expense.employee.name ? expense.employee.name : 'Unknown';
+                    const name = expense.name || 'No name';
+                    const amount = expense.amount ? `$${expense.amount.toFixed(2)}` : '$0.00';
+                    const type = expense.type || 'Unknown';
+                    const date = expense.date ? new Date(expense.date).toLocaleDateString() : 'No date';
+                    const status = expense.status || 'Unknown';
+                    const receiptUrl = expense.receiptUrl ? `Receipt: ${expense.receiptUrl}` : '';
+                    
+                    alert(`
+                        Expense Details:
+                        Department: ${department}
+                        Employee: ${employee}
+                        Name: ${name}
+                        Amount: ${amount}
+                        Type: ${type}
+                        Date: ${date}
+                        Status: ${status}
+                        ${receiptUrl}
+                    `);
+                }
             });
             actionsCell.appendChild(viewButton);
             

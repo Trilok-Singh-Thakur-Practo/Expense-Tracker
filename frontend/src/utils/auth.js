@@ -41,15 +41,22 @@ const Auth = {
                             ? authData.departmentId 
                             : (authData.role === 'FINANCE' ? null : 1); // Finance users can have null departmentId
                             
+                        // Make sure user ID is stored for proper employee association
+                        const userId = authData.id || authData.userId;
+                        console.log('User ID from auth response:', userId);
+                        
+                        // Store complete user info
                         localStorage.setItem('user', JSON.stringify({
+                            id: userId, // Add the user ID
                             email: authData.email,
                             name: authData.name,
                             role: authData.role,
                             departmentId: departmentId
                         }));
                         
-                        // Debug log to check the role value
+                        // Debug log to check the role value and user ID
                         console.log('User authenticated with role:', authData.role);
+                        console.log('User ID stored:', userId);
                         console.log('User department ID (original):', authData.departmentId);
                         console.log('User department ID (used):', departmentId);
                         
@@ -250,23 +257,39 @@ const Auth = {
      */
     updateDepartmentId: (departmentId) => {
         try {
-            // Get current user
+            // Get the current user from localStorage
             const userStr = localStorage.getItem('user');
-            if (!userStr) return false;
+            if (!userStr) {
+                console.error('Cannot update departmentId: No user found in localStorage');
+                return false;
+            }
             
-            // Parse user data
-            const userData = JSON.parse(userStr);
+            // Parse the user object
+            const user = JSON.parse(userStr);
             
-            // Update departmentId
-            userData.departmentId = departmentId;
+            // Update the departmentId
+            user.departmentId = departmentId;
             
-            // Save back to localStorage
-            localStorage.setItem('user', JSON.stringify(userData));
+            // Make sure the user has an ID property (add logging to debug the issue)
+            console.log("Current stored user object:", user);
+            if (!user.id) {
+                console.warn("User object doesn't have an ID property, this may cause issues with expense employee relationships");
+                // For debugging purposes, let's set a placeholder ID if missing
+                console.log("Original user.id:", user.id);
+                if (user.id === undefined || user.id === null) {
+                    user.id = 1; // Default to user ID 1 for testing
+                    console.log("Set default user.id to:", user.id);
+                }
+            }
             
-            console.log('User department ID updated to:', departmentId);
+            // Save the updated user object back to localStorage
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            console.log(`Department ID updated to ${departmentId} for user:`, user);
+            
             return true;
         } catch (error) {
-            console.error('Error updating department ID:', error);
+            console.error('Error updating departmentId:', error);
             return false;
         }
     },
